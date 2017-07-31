@@ -83,6 +83,12 @@ class MenuDemo(object):
         if input == '/':
             self._frame.set_focus('footer')
             self.command_prompt.set_caption('/')
+        if input == 'tab':
+            foc = self._frame.get_focus()
+            if foc == 'header':
+                self._frame.set_focus('body')
+            if foc == 'body':
+                self._frame.set_focus('header')
         else:
             return self.menu.checkShortcuts(input) #needed to manage shortcuts
 
