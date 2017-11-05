@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """This module manage action <==> key mapping and can be extended to add new actions"""
+from functools import reduce
 
 
 class ConflictError(Exception):
@@ -68,7 +69,7 @@ class ActionMap(dict):
         @param shortcut: new shortcut to use
         @raise KeyError: action doesn't exists
         """
-        assert isinstance(action, basestring)
+        assert isinstance(action, str)
         if action not in self:
             raise ValueError("Action [{}] doesn't exist".format(action))
         super(ActionMap, self).__setitem__(action, shortcut)
@@ -82,10 +83,10 @@ class ActionMap(dict):
         """
         if not isinstance(new_actions, dict):
             raise ValueError("only dictionary subclasses are accepted for update")
-        conflict = new_actions.viewkeys() & self.viewkeys()
+        conflict = new_actions.keys() & self.keys()
         if conflict:
             raise ConflictError("The actions [{}] already exists".format(','.join(conflict)))
-        for action, shortcut in new_actions.iteritems():
+        for action, shortcut in new_actions.items():
             self[action] = shortcut
 
     def replace(self, action_shortcuts_map):
@@ -97,7 +98,7 @@ class ActionMap(dict):
         """
         if not isinstance(action_shortcuts_map, dict):
             raise ValueError("only dictionary subclasses are accepted for replacing shortcuts")
-        for action, shortcut in action_shortcuts_map.iteritems():
+        for action, shortcut in action_shortcuts_map.items():
             self.replace_shortcut(action, shortcut)
 
     def set_close_namespaces(self, close_namespaces, always_check=None):

@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import urwid
-import sat_widgets
+from . import sat_widgets
 import os, os.path
 from xml.dom import minidom
 import logging as log
@@ -26,15 +26,15 @@ from time import time
 from .keys import action_key_map as a_key
 
 import gettext
-gettext.install('urwid_satext', unicode=True)
+gettext.install('urwid_satext', str=True)
 
 class PathEdit(sat_widgets.AdvancedEdit):
     """AdvancedEdit with manage file paths"""
 
     def keypress(self, size, key):
-        if key == u'~' and self.edit_pos==0:
-            expanded = os.path.expanduser(u'~')
-            self.set_edit_text(os.path.normpath(expanded+u'/'+self.edit_text))
+        if key == '~' and self.edit_pos==0:
+            expanded = os.path.expanduser('~')
+            self.set_edit_text(os.path.normpath(expanded+'/'+self.edit_text))
             self.set_edit_pos(len(expanded)+1)
         elif key == a_key['EDIT_DELETE_LAST_WORD']:
             if self.edit_pos<2:
@@ -97,8 +97,8 @@ class FilesViewer(urwid.WidgetWrap):
         files = []
         try:
             for filename in os.listdir(path):
-                if not isinstance(filename, unicode):
-                    log.warning(u"file [{}] has a badly encode filename, ignoring it".format(filename.decode('utf-8', 'replace')))
+                if not isinstance(filename, str):
+                    log.warning("file [{}] has a badly encode filename, ignoring it".format(filename.decode('utf-8', 'replace')))
                     continue
                 fullpath = os.path.join(path,filename)
                 if os.path.isdir(fullpath):
@@ -109,19 +109,19 @@ class FilesViewer(urwid.WidgetWrap):
            self.files_list.append(urwid.Text(("warning",_("Impossible to list directory")),'center'))
         directories.sort()
         files.sort()
-        if os.path.abspath(path)!=u'/' and os.path.abspath(path) != u'//':
-            previous_wid = sat_widgets.ClickableText((u'directory',u'..'))
+        if os.path.abspath(path)!='/' and os.path.abspath(path) != '//':
+            previous_wid = sat_widgets.ClickableText(('directory','..'))
             urwid.connect_signal(previous_wid,'click',self.onPreviousDir)
             self.files_list.append(previous_wid)
         for directory in directories:
             if directory.startswith('.') and not self.show_hidden:
                 continue
-            dir_wid = sat_widgets.ClickableText((u'directory',directory))
+            dir_wid = sat_widgets.ClickableText(('directory',directory))
             urwid.connect_signal(dir_wid,'click',self.onDirClick)
             self.files_list.append(dir_wid)
-        self.files_list.append(urwid.AttrMap(urwid.Divider(u'-'),'separator'))
+        self.files_list.append(urwid.AttrMap(urwid.Divider('-'),'separator'))
         for filename in files:
-            if filename.startswith(u'.') and not self.show_hidden:
+            if filename.startswith('.') and not self.show_hidden:
                 continue
             file_wid = sat_widgets.ClickableText(filename)
             if self.onFileClick:
@@ -142,27 +142,27 @@ class FileDialog(urwid.WidgetWrap):
         """
         self.ok_cb = ok_cb
         self._type = 'dir' if 'dir' in style else 'normal'
-        self.__home_path = os.path.expanduser(u'~')
+        self.__home_path = os.path.expanduser('~')
         widgets = []
         if message:
             widgets.append(urwid.Text(message))
-            widgets.append(urwid.Divider(u'─'))
-        self.path_wid = PathEdit(_(u'Path: '))
+            widgets.append(urwid.Divider('─'))
+        self.path_wid = PathEdit(_('Path: '))
         self.path_wid.setCompletionMethod(self._directory_completion)
         urwid.connect_signal(self.path_wid, 'change', self.onPathChange)
         widgets.append(self.path_wid)
-        widgets.append(urwid.Divider(u'─'))
+        widgets.append(urwid.Divider('─'))
         header = urwid.Pile(widgets)
         bookm_list = urwid.SimpleListWalker([])
         self.bookmarks = list(self.getBookmarks())
         self.bookmarks.sort()
         for bookmark in self.bookmarks:
             if bookmark.startswith(self.__home_path):
-                bookmark=u"~"+bookmark[len(self.__home_path):]
+                bookmark="~"+bookmark[len(self.__home_path):]
             book_wid = sat_widgets.ClickableText(bookmark)
             urwid.connect_signal(book_wid, 'click', self.onBookmarkSelected)
             bookm_list.append(book_wid)
-        bookm_wid = urwid.Frame(urwid.ListBox(bookm_list), urwid.AttrMap(urwid.Text(_(u'Bookmarks'),'center'),'title'))
+        bookm_wid = urwid.Frame(urwid.ListBox(bookm_list), urwid.AttrMap(urwid.Text(_('Bookmarks'),'center'),'title'))
         self.files_wid = FilesViewer(self.onPreviousDir, self.onDirClick, self.onFileClick if self._type == 'normal' else None)
         center_row = urwid.Columns([('weight',2,bookm_wid),
                      ('weight',8,sat_widgets.VerticalSeparator(self.files_wid))])
@@ -176,7 +176,7 @@ class FileDialog(urwid.WidgetWrap):
         main_frame = sat_widgets.FocusFrame(center_row, header, buttons_wid)
         decorated = sat_widgets.LabelLine(main_frame, sat_widgets.SurroundedText(title))
         urwid.WidgetWrap.__init__(self, decorated)
-        self.path_wid.set_edit_text(os.getcwdu())
+        self.path_wid.set_edit_text(os.getcwd())
 
     def _validateDir(self, wid):
         """ call ok callback if current path is a dir """
@@ -185,21 +185,21 @@ class FileDialog(urwid.WidgetWrap):
             self.ok_cb(path)
 
     def _directory_completion(self, path, completion_data):
-        assert isinstance(path, unicode)
+        assert isinstance(path, str)
         path=os.path.abspath(path)
         if not os.path.isdir(path):
             head,dir_start = os.path.split(path)
         else:
             head=path
-            dir_start=u''
+            dir_start=''
         try:
             filenames = os.listdir(head)
             to_remove = []
 
             # we remove badly encoded files
             for filename in filenames:
-                if not isinstance(filename, unicode):
-                    log.warning(u"file [{}] has a badly encode filename, ignoring it".format(filename.decode('utf-8', 'replace')))
+                if not isinstance(filename, str):
+                    log.warning("file [{}] has a badly encode filename, ignoring it".format(filename.decode('utf-8', 'replace')))
                     to_remove.append(filename)
             for filename in to_remove:
                 filenames.remove(filename)
@@ -211,7 +211,7 @@ class FileDialog(urwid.WidgetWrap):
                     start_idx = 0
             except (KeyError,ValueError):
                 start_idx = 0
-            for idx in range(start_idx,len(filenames)) + range(0,start_idx):
+            for idx in list(range(start_idx,len(filenames))) + list(range(0,start_idx)):
                 full_path = os.path.join(head,filenames[idx])
                 if filenames[idx].lower().startswith(dir_start.lower()) and os.path.isdir(full_path):
                     completion_data['last_dir'] = filenames[idx]
@@ -221,8 +221,8 @@ class FileDialog(urwid.WidgetWrap):
         return path
 
     def getBookmarks(self):
-        gtk_bookm = os.path.expanduser(u"~/.gtk-bookmarks")
-        kde_bookm = os.path.expanduser(u"~/.kde/share/apps/kfileplaces/bookmarks.xml")
+        gtk_bookm = os.path.expanduser("~/.gtk-bookmarks")
+        kde_bookm = os.path.expanduser("~/.kde/share/apps/kfileplaces/bookmarks.xml")
         bookmarks = set()
         try:
             with open(gtk_bookm) as gtk_fd:
@@ -230,7 +230,7 @@ class FileDialog(urwid.WidgetWrap):
                     if bm.startswith("file:///"):
                         bookmarks.add(bm[7:].replace('\n','').decode('utf-8', 'replace'))
         except IOError:
-            log.info(_(u'No GTK bookmarks file found'))
+            log.info(_('No GTK bookmarks file found'))
             pass
 
         try:

@@ -121,7 +121,7 @@ class Password(AdvancedEdit):
         """Same args than Edit.__init__ with an additional keyword arg 'hidden_char'
         @param hidden_char: char to show instead of what is actually entered: default '*'
         """
-        self.hidden_char=kwargs['hidden_char'] if kwargs.has_key('hidden_char') else '*'
+        self.hidden_char=kwargs['hidden_char'] if 'hidden_char' in kwargs else '*'
         self.__real_text=''
         super(Password, self).__init__(*args, **kwargs)
 
@@ -195,7 +195,7 @@ class SurroundedText(urwid.Widget):
     """Text centered on a repeated character (like a Divider, but with a text in the center)"""
     _sizing = frozenset(['flow'])
 
-    def __init__(self,text,car=utf8decode('─')):
+    def __init__(self,text,car=('─').encode("utf-8")):
         self.text=text
         self.car=car
 
@@ -233,7 +233,7 @@ class AlwaysSelectableText(urwid.WidgetWrap):
         self.setState(selected)
 
     def getValue(self):
-        if isinstance(self.text,basestring):
+        if isinstance(self.text,str):
             return self.text
         list_attr = self.text if isinstance(self.text, list) else [self.text]
         txt = ""
@@ -369,7 +369,7 @@ class CustomButton(ClickableText):
         self.set_text([self.left_border, label, self.right_border])
 
 
-class ListOption(unicode):
+class ListOption(str):
     """Unicode which manage label and value
 
     This class similar to unicode, but which make the difference between value and label
@@ -383,7 +383,7 @@ class ListOption(unicode):
     def __new__(cls, option):
         if (isinstance(option, cls)):
             return option
-        elif isinstance(option, basestring):
+        elif isinstance(option, str):
             value = label = option
         elif (isinstance(option, tuple) and len(option) == 2):
             value, label = option
@@ -817,7 +817,7 @@ class NotificationBar(urwid.WidgetWrap):
                 self._modQueue()
                 return
 
-        raise ValueError(u"trying to remove an unknown pop_up_widget")
+        raise ValueError("trying to remove an unknown pop_up_widget")
 
     def addMessage(self, message):
         "Add a message to the notificatio bar"
@@ -956,7 +956,7 @@ class Menu(urwid.WidgetWrap):
         return self._w.base_widget.keypress(size, key)
 
     def checkShortcuts(self, key):
-        for shortcut in self.shortcuts.keys():
+        for shortcut in list(self.shortcuts.keys()):
             if key == shortcut:
                 category, item, callback = self.shortcuts[shortcut]
                 callback((category, item))
@@ -968,7 +968,7 @@ class Menu(urwid.WidgetWrap):
         @param category: category of the menu (e.g. File/Edit)
         @param item: menu item (e.g. new/close/about)
         @callback: method to call when item is selected"""
-        if not category in self.menu.keys():
+        if not category in list(self.menu.keys()):
             self.menu_keys.append(category)
             self.menu[category] = []
             button = CustomButton(('menubar',category), self.onCategoryClick,
@@ -979,7 +979,7 @@ class Menu(urwid.WidgetWrap):
             return
         self.menu[category].append((item, callback))
         if shortcut:
-            assert(shortcut not in self.shortcuts.keys())
+            assert(shortcut not in list(self.shortcuts.keys()))
             self.shortcuts[shortcut] = (category, item, callback)
 
     def onItemClick(self, widget):
@@ -1031,7 +1031,7 @@ class MenuRoller(urwid.WidgetWrap):
             self.columns.contents[1] = (urwid.Text(''), ('weight', 1, False))
         else:
             menu_item = self.menu_items[self.selected]
-            name_txt = u'\u21c9 ' + menu_item.name + u' \u21c7 '
+            name_txt = '\u21c9 ' + menu_item.name + ' \u21c7 '
             current_name = ClickableText(name_txt)
             name_len = len(name_txt)
             current_menu = menu_item.widget
@@ -1040,7 +1040,7 @@ class MenuRoller(urwid.WidgetWrap):
             self.columns.contents[1] = (current_menu, ('weight', 1, False))
 
     def keypress(self, size, key):
-        menu_ids = self.menu_items.keys()
+        menu_ids = list(self.menu_items.keys())
         try:
             idx = menu_ids.index(self.selected)
         except ValueError:
@@ -1074,7 +1074,7 @@ class MenuRoller(urwid.WidgetWrap):
         @param menu_id: id to use of this menu, or None to generate
         @return: menu_id
         """
-        names = {menu_item.name: id_ for id_, menu_item in self.menu_items.iteritems()}
+        names = {menu_item.name: id_ for id_, menu_item in self.menu_items.items()}
 
         if name not in names:
             id_ = menu_id or str(uuid.uuid4())
@@ -1109,13 +1109,13 @@ class MenuRoller(urwid.WidgetWrap):
         del self.menu_items[menu_id]
         if self.selected == menu_id:
             try:
-                self.selected = self.menu_items.iterkeys().next()
+                self.selected = next(iter(self.menu_items.keys()))
             except StopIteration:
                 self.selected = None
             self._showSelected()
 
     def checkShortcuts(self, key):
-        for menu_item in self.menu_items.values():
+        for menu_item in list(self.menu_items.values()):
             key = menu_item.widget.checkShortcuts(key)
         return key
 
@@ -1140,7 +1140,7 @@ class GenericDialog(urwid.WidgetWrap):
         if "OK" in style:
             self.buttons['ok'] = urwid.Button(_("Ok"), kwargs.get('ok_cb'), kwargs.get('ok_value'))
         if self.buttons:
-            buttons_flow = urwid.GridFlow(self.buttons.values(), max([len(button.get_label()) for button in self.buttons.itervalues()])+4, 1, 1, 'center')
+            buttons_flow = urwid.GridFlow(list(self.buttons.values()), max([len(button.get_label()) for button in self.buttons.values()])+4, 1, 1, 'center')
         body_content = urwid.SimpleListWalker(widgets_lst)
         frame_body = UnselectableListBox(body_content)
         frame = FocusFrame(frame_body, frame_header, buttons_flow if self.buttons else None, 'footer' if self.buttons else 'body')
@@ -1324,9 +1324,9 @@ class ColumnsRoller(urwid.Widget):
             render.append((widget.render((width,),_focus),False,_focus,width))
             idx+=1
         if _prev:
-            render.insert(0,(urwid.Text([u"◀"]).render((1,),False),False,False,1))
+            render.insert(0,(urwid.Text(["◀"]).render((1,),False),False,False,1))
         if _next:
-            render.append((urwid.Text([u"▶"],align='right').render((1+cols_left,),False),False,False,1+cols_left))
+            render.append((urwid.Text(["▶"],align='right').render((1+cols_left,),False),False,False,1+cols_left))
         else:
             render.append((urwid.SolidCanvas(" "*cols_left, size[0], 1),False,False,cols_left))
 
@@ -1422,7 +1422,7 @@ class TabsContainer(urwid.WidgetWrap):
         self._current_tab = None
         self._buttons_cont = ColumnsRoller()
         self.tabs = []
-        self._frame = FocusFrame(urwid.Filler(urwid.Text('')),urwid.Pile([self._buttons_cont,urwid.Divider(u"─")]))
+        self._frame = FocusFrame(urwid.Filler(urwid.Text('')),urwid.Pile([self._buttons_cont,urwid.Divider("─")]))
         urwid.WidgetWrap.__init__(self, self._frame)
 
     def keypress(self, size, key):
@@ -1670,7 +1670,7 @@ class LabelLine(urwid.LineBox):
 
 
 class VerticalSeparator(urwid.WidgetDecoration, urwid.WidgetWrap):
-    def __init__(self, original_widget, left_char = u"│", right_char = ''):
+    def __init__(self, original_widget, left_char = "│", right_char = ''):
         """Draw a separator on left and/or right of original_widget."""
 
         widgets = [original_widget]
