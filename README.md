@@ -4,3 +4,4 @@ Ceci est un sqelette pour une application curses (en console) avec un menu et un
 
 ### COPIE D'ECRAN
 
+![capture](screenscrot.png)
